@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>גופים במרחב – נוסחאון 3 יח״ל</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f5; --panel:#ffffff; --panel2:#f5f8fa; --ink:#18263a; --muted:#56637a; --line:#d7dfe7;
+  --accent:#1f5fc9; --lat:#ee7b22; --base:#2d6fd8; --vol:#0f9d8a; --neutral:#8ea0b4;
+  --edge:#18263a; --grid:#c4cfda; --paper:#f8fafc; --paperline:rgba(31,95,201,.07);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151c; --panel:#18202a; --panel2:#1e2833; --ink:#e8eef5; --muted:#9eabbb; --line:#2a3644;
+    --accent:#7aa5ff; --neutral:#7f91a6; --edge:#e8eef5; --grid:#2f3c4b; --paper:#141b24; --paperline:rgba(122,165,255,.06);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151c; --panel:#18202a; --panel2:#1e2833; --ink:#e8eef5; --muted:#9eabbb; --line:#2a3644;
+  --accent:#7aa5ff; --neutral:#7f91a6; --edge:#e8eef5; --grid:#2f3c4b; --paper:#141b24; --paperline:rgba(122,165,255,.06);
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Rubik',system-ui,'Segoe UI',Arial,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1340px;margin:0 auto;padding:16px}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.3px}
+header .sub{color:var(--muted);font-size:15px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.solids{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;margin:12px 0 8px;scrollbar-width:thin}
+.solids button{flex:0 0 auto;display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:7px 12px 7px 10px;font-size:14px;cursor:pointer;white-space:nowrap}
+.solids button .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:var(--panel2);border:1px solid var(--line)}
+.solids button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.solids button.on .n{background:transparent;border-color:currentColor}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(310px,1fr);gap:16px;align-items:start}
+@media (max-width:920px){.layout{grid-template-columns:1fr}}
+
+.viewer{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px}
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vhead button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:15px;white-space:nowrap}
+#solidName{font-size:21px;font-weight:700;text-align:center}
+#stage{position:relative;height:min(62vh,600px);min-height:340px;margin:10px 0;border-radius:14px;overflow:hidden;touch-action:none;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--paperline) 1px,transparent 1px),linear-gradient(90deg,var(--paperline) 1px,transparent 1px);
+  background-size:24px 24px;border:1px solid var(--line)}
+#stage canvas{display:block;width:100%;height:100%;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.plabel,.flabel{position:absolute;left:0;top:0;direction:ltr;white-space:nowrap;will-change:transform}
+.plabel{font-weight:700;font-size:15px;padding:1px 9px;border-radius:999px;background:var(--panel);border:2px solid var(--c);color:var(--c);box-shadow:0 1px 4px rgba(0,0,0,.12);font-family:'Cambria Math','STIX Two Math','Times New Roman',serif}
+.plabel.on{background:var(--c);color:#fff;font-size:17px}
+.flabel{font-size:13px;font-weight:500;padding:1px 7px;border-radius:7px;background:var(--panel);color:var(--ink);border:1.5px solid var(--fc);opacity:.95;font-family:'Cambria Math','STIX Two Math','Times New Roman',serif}
+.hint{position:absolute;bottom:10px;right:50%;transform:translateX(50%);background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:13px;padding:4px 12px;border-radius:999px;transition:opacity .6s;pointer-events:none;white-space:nowrap}
+.hint.gone{opacity:0}
+.scale-note{position:absolute;top:8px;right:10px;font-size:12px;color:var(--muted);pointer-events:none}
+
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.modes button{border:2px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px 6px;cursor:pointer;font-size:15px;font-weight:500;line-height:1.25}
+.modes button small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.modes button.on{border-color:var(--mc);background:color-mix(in srgb,var(--mc) 14%,var(--panel))}
+.modes button:disabled{opacity:.4;cursor:not-allowed}
+.modes [data-m=struct]{--mc:var(--ink)} .modes [data-m=M]{--mc:var(--lat)} .modes [data-m=F]{--mc:var(--base)} .modes [data-m=V]{--mc:var(--vol)}
+
+.rot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:12px;font-size:14px;color:var(--muted)}
+.rot label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.rot .ang{display:flex;align-items:center;gap:8px;flex:1 1 220px}
+.rot .ang input{flex:1}
+.rot .ang output{min-width:44px;direction:ltr;color:var(--ink);font-weight:500}
+.rot .btns{display:flex;gap:6px;flex-wrap:wrap}
+.rot .btns button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px}
+input[type=range]{accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.card h3{margin:0 0 8px;font-size:17px}
+.card p{margin:6px 0}
+.mtitle{font-size:20px;font-weight:700;margin-bottom:2px}
+.mtitle.M{color:var(--lat)} .mtitle.F{color:var(--base)} .mtitle.V{color:var(--vol)}
+.m{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:'Cambria Math','STIX Two Math','Times New Roman',serif}
+.big{display:block;text-align:center;font-size:25px;margin:8px 0 10px;padding:8px;border-radius:12px;background:var(--panel2)}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.92em;margin:0 3px;line-height:1.15}
+.fr>span:first-child{border-bottom:1.5px solid currentColor;padding:0 4px 1px}
+.fr>span:last-child{padding-top:1px}
+.spec{color:var(--muted)}
+.extra{margin:8px 0;padding:6px 10px;border-right:3px solid var(--line);color:var(--muted);font-size:15px}
+.calc{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line)}
+.calc .lbl{font-size:13px;color:var(--muted);margin-bottom:4px}
+.calc .m{font-size:18px}
+.unit{font-size:14px;color:var(--muted);margin-inline-start:6px}
+.replay{margin-top:10px;border:1px solid var(--vol);color:var(--vol);background:transparent;border-radius:10px;padding:6px 14px;cursor:pointer}
+.flist{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.frow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:right}
+.frow .tag{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;flex:0 0 auto}
+.frow.M .tag{background:var(--lat)} .frow.F .tag{background:var(--base)} .frow.V .tag{background:var(--vol)}
+.frow .nm{color:var(--muted);font-size:13px;margin-inline-start:auto}
+.frow .m{font-size:17px}
+.frow.dis{cursor:default;opacity:.6}
+.frow.dis .tag{background:var(--neutral)}
+
+.prow{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent;user-select:none}
+.prow:hover,.prow.on{background:var(--panel2);border-color:var(--line)}
+.prow.on{border-color:var(--c)}
+.sym{min-width:36px;height:32px;border-radius:8px;display:grid;place-items:center;font-weight:700;color:#fff;background:var(--c);direction:ltr;font-family:'Cambria Math','Times New Roman',serif;font-style:italic;font-size:19px;flex:0 0 auto}
+.prow .val{margin-inline-start:auto;color:var(--muted);font-size:14px}
+.tip{font-size:13px;color:var(--muted);margin:8px 0 0}
+.drow{display:grid;grid-template-columns:1fr 44px;gap:2px 10px;align-items:center;margin:8px 0}
+.drow label{font-size:14px;grid-column:1/-1}
+.drow output{direction:ltr;font-weight:500;text-align:center}
+.note{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hint{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>גופים במרחב</h1>
+    <span class="sub">עשרת הגופים מהנוסחאון – 3 יחידות לימוד</span>
+  </header>
+
+  <nav class="solids" id="solidNav" aria-label="בחירת גוף"></nav>
+
+  <main class="layout">
+    <section class="viewer" aria-label="תצוגת הגוף">
+      <div class="vhead">
+        <button id="prevBtn" aria-label="הגוף הקודם">→ הקודם</button>
+        <div id="solidName"></div>
+        <button id="nextBtn" aria-label="הגוף הבא">הבא ←</button>
+      </div>
+      <div id="stage">
+        <div id="labels"></div>
+        <div class="scale-note">הגוף מוצג בקנה מידה מותאם למסך</div>
+        <div class="hint" id="hint">גררו כדי לסובב 360° · גלגלת או צביטה לזום</div>
+      </div>
+      <div class="modes" role="tablist">
+        <button data-m="struct" role="tab">מבנה הגוף<small>פרמטרים</small></button>
+        <button data-m="M" role="tab">שטח מעטפת<small>M</small></button>
+        <button data-m="F" role="tab">שטח פנים<small>F</small></button>
+        <button data-m="V" role="tab">נפח<small>V</small></button>
+      </div>
+      <div class="rot">
+        <label><input type="checkbox" id="auto" checked> סיבוב אוטומטי</label>
+        <div class="ang"><span>זווית</span><input type="range" id="angle" min="0" max="360" step="1" aria-label="זווית סיבוב"><output id="angleVal">0°</output></div>
+        <div class="btns">
+          <button id="vFront">מבט מהצד</button>
+          <button id="vTop">מבט מלמעלה</button>
+          <button id="vReset">איפוס מבט</button>
+        </div>
+        <label><input type="checkbox" id="lbl" checked> הצגת מידות</label>
+        <label><input type="checkbox" id="showCalcs" checked> הצגת חישובים</label>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card" id="modeCard" aria-live="polite"></div>
+      <div class="card">
+        <h3>מה אומר כל פרמטר?</h3>
+        <div id="params"></div>
+        <p class="tip">העבירו את העכבר או הקישו על פרמטר כדי לראות אותו על הגוף.</p>
+      </div>
+      <div class="card">
+        <h3>מידות הגוף</h3>
+        <div id="dims"></div>
+        <p class="note">המידות בס״מ. שנו מידה וראו איך הגוף והחישובים משתנים.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const V3 = THREE.Vector3, SQ3 = Math.sqrt(3);
+const PCOL = {a:'#e5484d', b:'#12a594', c:'#b7791f', h:'#8e4ec6', R:'#e08600', l:'#d6409f', S:'#2d6fd8', P:'#0797b9'};
+const SYM  = {a:'a', b:'b', c:'c', h:'h', R:'R', l:'ℓ', S:'S', P:'P'};
+const NAMES = {M:'שטח מעטפת', F:'שטח פנים', V:'נפח'};
+
+const fmt = x => { const r = Math.round(x*100)/100; return Number.isInteger(r) ? String(r) : String(r); };
+const fr = (n,d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+
+/* ---------- הגדרת הגופים ---------- */
+const GEN = {
+  M:'המעטפת היא הפאות הצדדיות של הגוף בלבד – בלי הבסיסים. היא צבועה בכתום, והבסיסים כמעט שקופים כי הם לא נכללים.',
+  F:'שטח הפנים הוא כל השטח החיצוני של הגוף: המעטפת (כתום) ועוד הבסיסים (כחול), שנכנסים עכשיו למקומם.',
+  V:'הנפח הוא כמות המקום שבתוך הגוף – כמה מים אפשר לשפוך לתוכו. צפו בגוף מתמלא.'
+};
+const PYR_TXT = {
+  M:'הפאות הצדדיות הן משולשים. אין נוסחה אחת – מחשבים את השטח של כל משולש ומחברים. המספר על כל פאה הוא השטח שלה.',
+  F:'לפירמידה יש בסיס אחד בלבד – מוסיפים אותו פעם אחת.',
+  V:'החתך הולך וקטן עד הקודקוד. הנפח של הפירמידה הוא שליש מנפח המנסרה המקווקוות, שיש לה אותו בסיס ואותו גובה.'
+};
+const pyrCalc = extra => (d,g) => {
+  const M = g.lat.reduce((s,x)=>s+x,0);
+  return {
+    M:{f:'M = (סכום שטחי הפאות הצדדיות)', sub:g.lat.map(fmt).join(' + '), val:M},
+    F:{f:'F = M + S', sub:`${fmt(M)} + ${fmt(g.S)}`, val:M+g.S},
+    V:{f:'V = '+fr('S·h','3'), sub:fr(`${fmt(g.S)}·${d.h}`,'3'), val:g.S*d.h/3},
+    extra:extra(d,g)
+  };
+};
+
+const SOLIDS = [
+{ id:'box', name:'תיבה', type:'poly',
+  desc:'כל הפאות של התיבה הן מלבנים. יש לה 2 בסיסים (למטה ולמעלה) ו־4 פאות צדדיות.',
+  dims:[['a','מקצוע הבסיס a',5],['b','מקצוע הבסיס b',3],['h','גובה התיבה h',4]],
+  params:[['a','מקצוע של הבסיס'],['b','מקצוע של הבסיס'],['h','גובה התיבה – המרחק בין שני הבסיסים']],
+  geom:d=>({bot:[[0,0],[d.a,0],[d.a,d.b],[0,d.b]], h:d.h,
+    dims:{a:[[0,0,d.b],[d.a,0,d.b]], b:[[d.a,0,0],[d.a,0,d.b]], h:[[d.a,0,d.b],[d.a,d.h,d.b]]}}),
+  calc:(d)=>{const M=2*(d.a+d.b)*d.h; return {
+    M:{f:'M = 2(a + b)·h', sub:`2(${d.a} + ${d.b})·${d.h}`, val:M},
+    F:{f:'F = M + 2ab', sub:`${fmt(M)} + 2·${d.a}·${d.b}`, val:M+2*d.a*d.b},
+    V:{f:'V = a·b·h', sub:`${d.a}·${d.b}·${d.h}`, val:d.a*d.b*d.h}};},
+  txt:{M:'ארבע פאות מלבניות: שתיים בגודל a×h ושתיים בגודל b×h. יחד: 2ah + 2bh = 2(a + b)·h.',
+       F:'מוסיפים את שני הבסיסים – כל אחד מלבן בשטח a·b.',
+       V:'כל שכבה היא מלבן בשטח a·b, והשכבות נערמות עד הגובה h.'}},
+
+{ id:'cube', name:'קובייה', type:'poly',
+  desc:'תיבה מיוחדת שכל המקצועות שלה שווים. יש לה 6 פאות ריבועיות זהות.',
+  dims:[['a','מקצוע הקובייה a',4]],
+  params:[['a','אורך המקצוע של הקובייה – כל 12 המקצועות שווים לו']],
+  geom:d=>({bot:[[0,0],[d.a,0],[d.a,d.a],[0,d.a]], h:d.a, dims:{a:[[0,0,d.a],[d.a,0,d.a]]}}),
+  calc:(d)=>({
+    M:{f:'M = 4a²', sub:`4·${d.a}²`, val:4*d.a*d.a},
+    F:{f:'F = 6a²', sub:`6·${d.a}²`, val:6*d.a*d.a},
+    V:{f:'V = a³', sub:`${d.a}³`, val:d.a**3}}),
+  txt:{M:'ארבעה ריבועים צדדיים, כל אחד בשטח a².',
+       F:'מוסיפים 2 בסיסים ריבועיים – בסך הכול 6 ריבועים זהים.',
+       V:'שטח הבסיס a² כפול הגובה a.'}},
+
+{ id:'prism', name:'מנסרה ישרה שבסיסה משולש', type:'poly',
+  desc:'שני בסיסים משולשים זהים ומקבילים, ו־3 פאות צדדיות מלבניות. מנסרה ישרה – המקצועות הצדדיים מאונכים לבסיס. כאן הבסיס הוא משולש ישר זווית.',
+  dims:[['a','ניצב בבסיס a',4],['b','ניצב בבסיס b',3],['h','גובה המנסרה h',6]],
+  params:[['P','היקף הבסיס'],['S','שטח הבסיס'],['h','גובה המנסרה'],['a','ניצב במשולש הבסיס'],['b','ניצב במשולש הבסיס']],
+  geom:d=>({bot:[[0,0],[0,d.b],[d.a,d.b]], h:d.h, pEdge:2,
+    ra:[[[0,0,d.b],[1,0,0],[0,0,-1]]],
+    dims:{a:[[0,0,d.b],[d.a,0,d.b]], b:[[0,0,0],[0,0,d.b]], h:[[d.a,0,d.b],[d.a,d.h,d.b]]}}),
+  calc:(d,g)=>{const c=Math.hypot(d.a,d.b), M=g.P*d.h; return {
+    M:{f:'M = P·h', sub:`${fmt(g.P)}·${d.h}`, val:M},
+    F:{f:'F = M + 2S', sub:`${fmt(M)} + 2·${fmt(g.S)}`, val:M+2*g.S},
+    V:{f:'V = S·h', sub:`${fmt(g.S)}·${d.h}`, val:g.S*d.h},
+    extra:`<span class="m">c = √(a² + b²) = ${fmt(c)}</span><br><span class="m">S = ${fr('a·b','2')} = ${fmt(g.S)}</span><br><span class="m">P = a + b + c = ${fmt(g.P)}</span>`};},
+  txt:{M:'שלושה מלבנים. הרוחב של כל אחד הוא צלע של הבסיס, והגובה של כולם h. לכן יחד: היקף הבסיס × הגובה.',
+       F:'מוסיפים את שני הבסיסים המשולשים, כל אחד בשטח S.',
+       V:'שכבות משולשות בשטח S נערמות עד הגובה h.'}},
+
+{ id:'pyrRect', name:'פירמידה ישרה שבסיסה מלבן', type:'poly',
+  desc:'בסיס מלבני אחד ו־4 פאות צדדיות משולשות שנפגשות בקודקוד. פירמידה ישרה – הגובה יורד מהקודקוד למרכז הבסיס (מפגש האלכסונים).',
+  dims:[['a','מקצוע הבסיס a',6],['b','מקצוע הבסיס b',4],['h','גובה הפירמידה h',6]],
+  params:[['S','שטח הבסיס (מלבן)'],['h','גובה הפירמידה – האנך מהקודקוד למרכז הבסיס'],['a','מקצוע של הבסיס'],['b','מקצוע של הבסיס']],
+  geom:d=>({bot:[[0,0],[d.a,0],[d.a,d.b],[0,d.b]], h:d.h, apex:[d.a/2,d.b/2], hDashed:true,
+    ra:[[[d.a/2,0,d.b/2],[1,0,0],[0,1,0]]],
+    dims:{a:[[0,0,d.b],[d.a,0,d.b]], b:[[d.a,0,0],[d.a,0,d.b]], h:[[d.a/2,0,d.b/2],[d.a/2,d.h,d.b/2]]}}),
+  calc:pyrCalc((d,g)=>`<span class="m">S = a·b = ${d.a}·${d.b} = ${fmt(g.S)}</span>`), txt:PYR_TXT},
+
+{ id:'pyrTri', name:'פירמידה ישרה שבסיסה משולש', type:'poly',
+  desc:'בסיס משולש ו־3 פאות צדדיות משולשות. פירמידה ישרה – הגובה יורד מהקודקוד למרכז הבסיס. כאן הבסיס הוא משולש שווה צלעות.',
+  dims:[['a','צלע הבסיס a',6],['h','גובה הפירמידה h',6]],
+  params:[['S','שטח הבסיס (משולש)'],['h','גובה הפירמידה – האנך מהקודקוד למרכז הבסיס'],['a','צלע הבסיס (משולש שווה צלעות)']],
+  geom:d=>{const t=d.a*SQ3/2; return {bot:[[d.a/2,0],[d.a,t],[0,t]], h:d.h, apex:[d.a/2,2*t/3], hDashed:true,
+    ra:[[[d.a/2,0,2*t/3],[1,0,0],[0,1,0]]],
+    dims:{a:[[0,0,t],[d.a,0,t]], h:[[d.a/2,0,2*t/3],[d.a/2,d.h,2*t/3]]}};},
+  calc:pyrCalc((d,g)=>`<span class="m">S = ½·a·a·sin60° = ${fmt(g.S)}</span>`), txt:PYR_TXT},
+
+{ id:'pyrTriOb', name:'פירמידה לא ישרה שבסיסה משולש', type:'poly',
+  desc:'אחד המקצועות הצדדיים מאונך לבסיס – והוא עצמו הגובה h. כאן הבסיס הוא משולש ישר זווית, והמקצוע המאונך עולה מקודקוד הזווית הישרה.',
+  dims:[['a','ניצב בבסיס a',4],['b','ניצב בבסיס b',3],['h','גובה הפירמידה h',5]],
+  params:[['S','שטח הבסיס (משולש ישר זווית)'],['h','גובה הפירמידה – המקצוע הצדדי שמאונך לבסיס'],['a','ניצב במשולש הבסיס'],['b','ניצב במשולש הבסיס']],
+  geom:d=>({bot:[[0,0],[0,d.b],[d.a,d.b]], h:d.h, apex:[0,d.b],
+    ra:[[[0,0,d.b],[1,0,0],[0,1,0]],[[0,0,d.b],[0,0,-1],[0,1,0]],[[0,0,d.b],[1,0,0],[0,0,-1]]],
+    dims:{a:[[0,0,d.b],[d.a,0,d.b]], b:[[0,0,0],[0,0,d.b]], h:[[0,0,d.b],[0,d.h,d.b]]}}),
+  calc:pyrCalc((d,g)=>`<span class="m">S = ${fr('a·b','2')} = ${fr(d.a+'·'+d.b,'2')} = ${fmt(g.S)}</span>`), txt:PYR_TXT},
+
+{ id:'pyrRectOb', name:'פירמידה לא ישרה שבסיסה מלבן', type:'poly',
+  desc:'אחד המקצועות הצדדיים מאונך לבסיס, בקודקוד של המלבן – והוא עצמו הגובה h.',
+  dims:[['a','מקצוע הבסיס a',5],['b','מקצוע הבסיס b',4],['h','גובה הפירמידה h',5]],
+  params:[['S','שטח הבסיס (מלבן)'],['h','גובה הפירמידה – המקצוע הצדדי שמאונך לבסיס'],['a','מקצוע של הבסיס'],['b','מקצוע של הבסיס']],
+  geom:d=>({bot:[[0,0],[d.a,0],[d.a,d.b],[0,d.b]], h:d.h, apex:[0,d.b],
+    ra:[[[0,0,d.b],[1,0,0],[0,1,0]],[[0,0,d.b],[0,0,-1],[0,1,0]]],
+    dims:{a:[[0,0,d.b],[d.a,0,d.b]], b:[[0,0,0],[0,0,d.b]], h:[[0,0,d.b],[0,d.h,d.b]]}}),
+  calc:pyrCalc((d,g)=>`<span class="m">S = a·b = ${d.a}·${d.b} = ${fmt(g.S)}</span>`), txt:PYR_TXT},
+
+{ id:'cyl', name:'גליל ישר', type:'curved',
+  desc:'שני בסיסים עגולים זהים ומקבילים, ומעטפת מעוגלת ביניהם.',
+  dims:[['R','רדיוס הבסיס R',3],['h','גובה הגליל h',6]],
+  params:[['R','רדיוס הבסיס'],['h','גובה הגליל']],
+  calc:d=>{const {R,h}=d; return {
+    M:{f:'M = 2π·R·h', sub:`2π·${R}·${h}`, pi:2*R*h},
+    F:{f:'F = M + 2π·R²', sub:`${fmt(2*R*h)}π + 2π·${R}²`, pi:2*R*h+2*R*R},
+    V:{f:'V = π·R²·h', sub:`π·${R}²·${h}`, pi:R*R*h}};},
+  txt:{M:'אם נגזור את המעטפת לאורך קו ישר ונפרוס אותה – נקבל מלבן: אורכו היקף הבסיס 2πR וגובהו h.',
+       F:'מוסיפים שני עיגולים, כל אחד בשטח πR².',
+       V:'שכבות עגולות בשטח πR² נערמות עד הגובה h.'}},
+
+{ id:'cone', name:'חרוט ישר', type:'curved',
+  desc:'בסיס עגול אחד וקודקוד. הקו היוצר ℓ מחבר את הקודקוד להיקף הבסיס. R, h ו־ℓ יוצרים משולש ישר זווית, ולכן ℓ² = R² + h².',
+  dims:[['R','רדיוס הבסיס R',3],['h','גובה החרוט h',4]],
+  params:[['R','רדיוס הבסיס'],['l','הקו היוצר – מהקודקוד להיקף הבסיס'],['h','גובה החרוט – מהקודקוד למרכז הבסיס']],
+  calc:d=>{const {R,h}=d, l=Math.hypot(R,h); return {
+    M:{f:'M = π·R·ℓ', sub:`π·${R}·${fmt(l)}`, pi:R*l},
+    F:{f:'F = M + π·R²', sub:`${fmt(R*l)}π + π·${R}²`, pi:R*l+R*R},
+    V:{f:'V = '+fr('π·R²·h','3'), sub:fr(`π·${R}²·${h}`,'3'), pi:R*R*h/3},
+    extra:`<span class="m">ℓ = √(R² + h²) = √(${R}² + ${h}²) = ${fmt(l)}</span>`};},
+  txt:{M:'אם נפרוס את המעטפת נקבל גזרה של עיגול שהרדיוס שלה הוא הקו היוצר ℓ. השטח שלה π·R·ℓ.',
+       F:'מוסיפים את הבסיס העגול – πR².',
+       V:'החתך העגול הולך וקטן עד הקודקוד. הנפח של החרוט הוא שליש מנפח הגליל המקווקוו, שיש לו אותו בסיס ואותו גובה.'}},
+
+{ id:'sphere', name:'כדור', type:'curved', noM:true, noBase:true,
+  desc:'כל הנקודות שנמצאות במרחק R ממרכז הכדור. לכדור אין בסיסים, ובנוסחאון אין לו שטח מעטפת.',
+  dims:[['R','רדיוס הכדור R',3]],
+  params:[['R','רדיוס הכדור – מהמרכז לכל נקודה על פני הכדור']],
+  calc:d=>{const R=d.R; return {M:null,
+    F:{f:'F = 4π·R²', sub:`4π·${R}²`, pi:4*R*R},
+    V:{f:'V = '+fr('4','3')+'·π·R³', sub:fr('4','3')+`·π·${R}³`, pi:4/3*R**3}};},
+  txt:{F:'לכדור אין בסיסים – שטח הפנים הוא כל פני הכדור.',
+       V:'החתכים הם עיגולים שגדלים עד קו המשווה ואז קטנים שוב.'}}
+];
+
+const DIMS = {};
+SOLIDS.forEach(s=>{ DIMS[s.id]={}; s.dims.forEach(([k,,v])=>DIMS[s.id][k]=v); });
+
+const state = {idx:0, mode:'struct', t:0, labels:true, showCalcs:true, hover:null, pin:null, auto:true};
+const view = {theta:0.65, phi:1.12, zoom:1};
+let COL = {}, model = null, dragging = false;
+
+/* ---------- three.js ---------- */
+const stage = document.getElementById('stage'), labelsEl = document.getElementById('labels');
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.localClippingEnabled = true;
+stage.insertBefore(renderer.domElement, labelsEl);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+scene.add(camera);
+scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+const keyLight = new THREE.DirectionalLight(0xffffff, 0.7); keyLight.position.set(3, 5, 2); camera.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.22); fillLight.position.set(-4, -3, -2); scene.add(fillLight);
+const clipPlane = new THREE.Plane(new V3(0,-1,0), 0);
+
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['lat','base','vol','neutral','edge','grid'].forEach(k=>COL[k]=cs.getPropertyValue('--'+k).trim());
+}
+
+const glassMat = () => new THREE.MeshPhongMaterial({color:COL.neutral, transparent:true, opacity:.24, side:THREE.DoubleSide, depthWrite:false, shininess:30});
+const basicMat = (c,op) => new THREE.MeshBasicMaterial(op==null ? {color:c} : {color:c, transparent:true, opacity:op, depthWrite:false});
+
+function polyGeo(faces){
+  const pos=[];
+  faces.forEach(f=>{ for(let i=1;i<f.length-1;i++){ [f[0],f[i],f[i+1]].forEach(p=>pos.push(p.x,p.y,p.z)); } });
+  const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3)); g.computeVertexNormals(); return g;
+}
+function area3(pts){
+  let nx=0,ny=0,nz=0;
+  for(let i=0;i<pts.length;i++){ const p=pts[i], q=pts[(i+1)%pts.length];
+    nx+=(p[1]-q[1])*(p[2]+q[2]); ny+=(p[2]-q[2])*(p[0]+q[0]); nz+=(p[0]-q[0])*(p[1]+q[1]); }
+  return Math.hypot(nx,ny,nz)/2;
+}
+function stick(p,q,r,mat,parent){
+  const dir=new V3().subVectors(q,p), len=dir.length();
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,10,1), mat);
+  m.position.copy(p).addScaledVector(dir,.5);
+  m.quaternion.setFromUnitVectors(new V3(0,1,0), dir.normalize());
+  parent.add(m); return m;
+}
+function dashed(p,q,r,mat,parent){
+  const out=[], n=Math.max(4, Math.round(p.distanceTo(q)/0.13));
+  for(let i=0;i<n;i+=2){ out.push(stick(p.clone().lerp(q,i/n), p.clone().lerp(q,Math.min(1,(i+1)/n)), r, mat, parent)); }
+  return out;
+}
+function ring(r,y,tube,mat,parent){
+  const g=new THREE.TorusGeometry(r,tube,8,120); g.rotateX(Math.PI/2);
+  const m=new THREE.Mesh(g,mat); m.position.y=y; parent.add(m); return m;
+}
+function rightAngle(at,u,v,s,mat,parent){
+  const a=at.clone().addScaledVector(u,s), b=a.clone().addScaledVector(v,s), c=at.clone().addScaledVector(v,s);
+  return [stick(a,b,.011,mat,parent), stick(b,c,.011,mat,parent)];
+}
+function outward(p,q,dist){
+  const mid=p.clone().add(q).multiplyScalar(.5), o=new V3(mid.x,0,mid.z);
+  if(o.length()<.35) o.set(1,0,0); else o.normalize();
+  return mid.addScaledVector(o,dist);
+}
+function newModel(){
+  return {root:new THREE.Group(), lat:[], bases:[], params:{}, faceLabels:[], extras:[], ghost:null, fill:null, section:null, info:{}};
+}
+
+/* ---------- בניית רב־פאון ---------- */
+function buildPoly(S,d){
+  const g=S.geom(d), h=g.h, m=newModel();
+  const xs=g.bot.map(p=>p[0]), zs=g.bot.map(p=>p[1]);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2, cz=(Math.min(...zs)+Math.max(...zs))/2;
+  const k=3.4/Math.max(Math.max(...xs)-Math.min(...xs), Math.max(...zs)-Math.min(...zs), h);
+  const T=p=>new V3((p[0]-cx)*k,(p[1]-h/2)*k,(p[2]-cz)*k);
+  const rawB=g.bot.map(([x,z])=>[x,0,z]), n=rawB.length;
+  const rawT=g.apex?null:g.bot.map(([x,z])=>[x,h,z]);
+  const rawA=g.apex?[g.apex[0],h,g.apex[1]]:null;
+  const B=rawB.map(T), Tp=rawT&&rawT.map(T), A=rawA&&T(rawA);
+  m.bottomY=-h*k/2; m.topY=h*k/2;
+
+  const latRaw=[], latW=[];
+  for(let i=0;i<n;i++){ const j=(i+1)%n;
+    if(Tp){ latRaw.push([rawB[i],rawB[j],rawT[j],rawT[i]]); latW.push([B[i],B[j],Tp[j],Tp[i]]); }
+    else  { latRaw.push([rawB[i],rawB[j],rawA]); latW.push([B[i],B[j],A]); } }
+  let P=0; for(let i=0;i<n;i++){ const p=rawB[i], q=rawB[(i+1)%n]; P+=Math.hypot(p[0]-q[0],p[2]-q[2]); }
+  m.info={lat:latRaw.map(area3), S:area3(rawB), P};
+
+  const lat=new THREE.Mesh(polyGeo(latW), glassMat()); lat.renderOrder=3; m.root.add(lat); m.lat.push(lat);
+  const bot=new THREE.Mesh(polyGeo([B]), glassMat()); bot.renderOrder=3; m.root.add(bot); m.bases.push({mesh:bot,dir:-1}); m.sBase=bot;
+  if(Tp){ const top=new THREE.Mesh(polyGeo([Tp]), glassMat()); top.renderOrder=3; m.root.add(top); m.bases.push({mesh:top,dir:1}); }
+
+  const all=[...latW,B]; if(Tp) all.push(Tp);
+  m.fill=new THREE.Mesh(polyGeo(all), new THREE.MeshPhongMaterial({color:COL.vol, transparent:true, opacity:.6, side:THREE.DoubleSide, depthWrite:false, clippingPlanes:[clipPlane]}));
+  m.fill.renderOrder=1; m.root.add(m.fill);
+  const secCol=new THREE.Color(COL.vol).multiplyScalar(.72);
+  m.section=new THREE.Mesh(polyGeo([B]), new THREE.MeshBasicMaterial({color:secCol, transparent:true, opacity:.6, side:THREE.DoubleSide, depthWrite:false}));
+  m.section.renderOrder=2; m.root.add(m.section);
+  m.setLevel=f=>{ const y=m.bottomY+f*(m.topY-m.bottomY); clipPlane.constant=y;
+    const s=A?1-f:1; m.section.scale.set(s,1,s);
+    m.section.position.set(A?(1-s)*A.x:0, y-m.bottomY, A?(1-s)*A.z:0); m.section.visible=s>.02; };
+
+  m.edgeMat=basicMat(COL.edge);
+  const bottomEdges=[];
+  for(let i=0;i<n;i++){ const j=(i+1)%n; bottomEdges.push(stick(B[i],B[j],.017,m.edgeMat,m.root));
+    if(Tp){ stick(Tp[i],Tp[j],.017,m.edgeMat,m.root); stick(B[i],Tp[i],.017,m.edgeMat,m.root); }
+    else stick(B[i],A,.017,m.edgeMat,m.root); }
+
+  // פרמטרים
+  const wanted=S.params.map(p=>p[0]);
+  for(const key of Object.keys(g.dims)){ if(!wanted.includes(key)) continue;
+    const p=T(g.dims[key][0]), q=T(g.dims[key][1]), mat=basicMat(PCOL[key]);
+    const objs=(key==='h'&&g.hDashed)? dashed(p,q,.026,mat,m.root) : [stick(p,q,.03,mat,m.root)];
+    m.params[key]={objs, anchor:outward(p,q,key==='h'&&g.hDashed?.32:.42)}; }
+  if(wanted.includes('S')){ const c=B.reduce((s,p)=>s.add(p),new V3()).multiplyScalar(1/n);
+    m.params.S={objs:[], anchor:c.add(new V3(0,-.02,0))}; }
+  if(wanted.includes('P')){ const i=g.pEdge||0;
+    m.params.P={objs:bottomEdges, swap:true, mat:basicMat(PCOL.P), anchor:outward(B[i],B[(i+1)%n],.42)}; }
+  (g.ra||[]).forEach(([at,u,v])=>{ m.extras.push(...rightAngle(T(at), new V3(...u), new V3(...v), .2, basicMat(PCOL.h), m.root)); });
+
+  // תוויות שטח על הפאות
+  latW.forEach((f,i)=>{ const c=f.reduce((s,p)=>s.add(p.clone()),new V3()).multiplyScalar(1/f.length);
+    const o=new V3(c.x,0,c.z); if(o.length()>.01) o.normalize();
+    m.faceLabels.push({anchor:c.addScaledVector(o,.1), text:fmt(m.info.lat[i]), kind:'lat'}); });
+  m.bases.forEach(b=>{ const pts=b.dir<0?B:Tp; const c=pts.reduce((s,p)=>s.add(p.clone()),new V3()).multiplyScalar(1/n);
+    m.faceLabels.push({anchor:c, obj:b.mesh, text:fmt(m.info.S), kind:'base'}); });
+
+  // מנסרת רפאים לפירמידה
+  if(A){ const gm=basicMat(COL.neutral,.75), grp=new THREE.Group(), up=new V3(0,h*k,0);
+    for(let i=0;i<n;i++){ const j=(i+1)%n, ti=B[i].clone().add(up), tj=B[j].clone().add(up);
+      dashed(B[i],ti,.009,gm,grp); dashed(ti,tj,.009,gm,grp); }
+    m.ghost=grp; m.root.add(grp); }
+  return m;
+}
+
+/* ---------- בניית גופים עגולים ---------- */
+function buildCurved(S,d){
+  const m=newModel(); m.edgeMat=basicMat(COL.edge);
+  const secCol=new THREE.Color(COL.vol).multiplyScalar(.72);
+  const fillMat=()=>new THREE.MeshPhongMaterial({color:COL.vol, transparent:true, opacity:.6, side:THREE.DoubleSide, depthWrite:false, clippingPlanes:[clipPlane]});
+  const secGeo=r=>{ const g=new THREE.CircleGeometry(r,96); g.rotateX(-Math.PI/2); return g; };
+  const u=new V3(.62,0,.78).normalize();
+
+  if(S.id==='sphere'){
+    const Rw=1.75; m.bottomY=-Rw; m.topY=Rw;
+    const surf=new THREE.Mesh(new THREE.SphereGeometry(Rw,72,48), glassMat()); surf.renderOrder=3; m.root.add(surf); m.lat.push(surf);
+    m.fill=new THREE.Mesh(new THREE.SphereGeometry(Rw*.995,72,48), fillMat()); m.fill.renderOrder=1; m.root.add(m.fill);
+    m.section=new THREE.Mesh(secGeo(Rw), new THREE.MeshBasicMaterial({color:secCol,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false})); m.section.renderOrder=2; m.root.add(m.section);
+    m.setLevel=f=>{ const y=m.bottomY+f*2*Rw; clipPlane.constant=y; const s=Math.sqrt(Math.max(0,1-(y/Rw)**2));
+      m.section.scale.set(s,1,s); m.section.position.y=y; m.section.visible=s>.02; };
+    ring(Rw,0,.008,basicMat(COL.edge,.45),m.root);
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(.05,16,12), m.edgeMat); m.root.add(dot);
+    const rim=u.clone().multiplyScalar(Rw);
+    m.params.R={objs:[stick(new V3(),rim,.03,basicMat(PCOL.R),m.root)], anchor:rim.clone().multiplyScalar(.5).add(new V3(0,.28,0))};
+    m.faceLabels.push({fn:()=>{const ph=view.phi-.75; return new V3(Rw*Math.sin(ph)*Math.sin(view.theta), Rw*Math.cos(ph), Rw*Math.sin(ph)*Math.cos(view.theta));}, text:'4πR²', kind:'lat'});
+    return m;
+  }
+
+  const {R,h}=d, isCone=S.id==='cone', k=3.4/Math.max(2*R,h), Rw=R*k, Hw=h*k;
+  m.bottomY=-Hw/2; m.topY=Hw/2;
+  const lat=new THREE.Mesh(new THREE.CylinderGeometry(isCone?0:Rw,Rw,Hw,96,1,true), glassMat()); lat.renderOrder=3; m.root.add(lat); m.lat.push(lat);
+  const bg=new THREE.CircleGeometry(Rw,96); bg.rotateX(-Math.PI/2); bg.translate(0,-Hw/2,0);
+  const bot=new THREE.Mesh(bg,glassMat()); bot.renderOrder=3; m.root.add(bot); m.bases.push({mesh:bot,dir:-1}); m.sBase=bot;
+  if(!isCone){ const tg=new THREE.CircleGeometry(Rw,96); tg.rotateX(-Math.PI/2); tg.translate(0,Hw/2,0);
+    const top=new THREE.Mesh(tg,glassMat()); top.renderOrder=3; m.root.add(top); m.bases.push({mesh:top,dir:1}); }
+  m.fill=new THREE.Mesh(isCone? new THREE.ConeGeometry(Rw*.995,Hw,96) : new THREE.CylinderGeometry(Rw*.995,Rw*.995,Hw,96), fillMat());
+  m.fill.renderOrder=1; m.root.add(m.fill);
+  m.section=new THREE.Mesh(secGeo(Rw), new THREE.MeshBasicMaterial({color:secCol,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
+  m.section.renderOrder=2; m.root.add(m.section);
+  m.setLevel=f=>{ const y=m.bottomY+f*Hw; clipPlane.constant=y; const s=isCone?1-f:1;
+    m.section.scale.set(s,1,s); m.section.position.y=y; m.section.visible=s>.02; };
+
+  ring(Rw,-Hw/2,.015,m.edgeMat,m.root);
+  if(!isCone) ring(Rw,Hw/2,.015,m.edgeMat,m.root);
+
+  const c0=new V3(0,-Hw/2,0), rim=c0.clone().addScaledVector(u,Rw), apex=new V3(0,Hw/2,0);
+  m.params.R={objs:[stick(c0,rim,.03,basicMat(PCOL.R),m.root)], anchor:c0.clone().addScaledVector(u,Rw*.5).add(new V3(0,-.3,0))};
+  if(isCone){
+    const hm=basicMat(PCOL.h);
+    m.params.h={objs:dashed(c0,apex,.026,hm,m.root), anchor:new V3(-.34,0,0)};
+    m.params.l={objs:[stick(apex,rim,.03,basicMat(PCOL.l),m.root)], anchor:apex.clone().lerp(rim,.5).addScaledVector(u,.38)};
+    m.extras.push(...rightAngle(c0,u.clone(),new V3(0,1,0),.2,hm,m.root));
+    m.info.l=Math.hypot(R,h);
+    const gm=basicMat(COL.neutral,.75), grp=new THREE.Group();
+    ring(Rw,Hw/2,.009,gm,grp);
+    [0,Math.PI/2,Math.PI,3*Math.PI/2].forEach(a=>{ const p=new V3(Rw*Math.cos(a),-Hw/2,Rw*Math.sin(a)); dashed(p,p.clone().setY(Hw/2),.009,gm,grp); });
+    m.ghost=grp; m.root.add(grp);
+    m.faceLabels.push({fn:()=>new V3(Math.sin(view.theta)*Rw*.55,0,Math.cos(view.theta)*Rw*.55), text:'πRℓ', kind:'lat'});
+  } else {
+    const w=new V3(.8,0,-.6), p=w.clone().multiplyScalar(Rw).setY(-Hw/2), q=p.clone().setY(Hw/2);
+    m.params.h={objs:[stick(p,q,.03,basicMat(PCOL.h),m.root)], anchor:outward(p,q,.38)};
+    m.faceLabels.push({fn:()=>new V3(Math.sin(view.theta)*Rw*1.02,.25,Math.cos(view.theta)*Rw*1.02), text:'2πRh', kind:'lat'});
+    m.faceLabels.push({anchor:new V3(0,Hw/2,0), obj:m.bases[1].mesh, text:'πR²', kind:'base'});
+  }
+  m.faceLabels.push({anchor:c0.clone().add(new V3(-Rw*.45,0,-Rw*.2)), obj:bot, text:'πR²', kind:'base'});
+  return m;
+}
+
+/* ---------- ניהול ---------- */
+const cur=()=>SOLIDS[state.idx];
+const H=()=>state.hover||state.pin;
+
+function disposeTree(o){ o.traverse(x=>{ if(x.geometry) x.geometry.dispose(); if(x.material){ (Array.isArray(x.material)?x.material:[x.material]).forEach(mm=>mm.dispose()); } }); }
+
+function build(){
+  if(model){ scene.remove(model.root); disposeTree(model.root); }
+  const S=cur(), d=DIMS[S.id];
+  model = S.type==='poly' ? buildPoly(S,d) : buildCurved(S,d);
+  const grid=new THREE.GridHelper(9,18,COL.grid,COL.grid);
+  grid.material.transparent=true; grid.material.opacity=.7; grid.position.y=model.bottomY-.003; model.root.add(grid);
+  scene.add(model.root);
+  model.calc=S.calc(d, model.info);
+  buildLabels();
+  applyMode();
+}
+
+function paramVal(key){ const d=DIMS[cur().id]; if(key in d) return d[key]; return model.info[key]; }
+
+let labelItems=[];
+function buildLabels(){
+  labelsEl.innerHTML=''; labelItems=[];
+  for(const [key] of cur().params){ const P=model.params[key]; if(!P) continue;
+    const el=document.createElement('div'); el.className='plabel'; el.style.setProperty('--c',PCOL[key]);
+    el.textContent=`${SYM[key]} = ${fmt(paramVal(key))}`; labelsEl.appendChild(el);
+    labelItems.push({el, anchor:P.anchor, key, type:'param'}); }
+  for(const f of model.faceLabels){
+    const el=document.createElement('div'); el.className='flabel'; el.style.setProperty('--fc', f.kind==='lat'?COL.lat:COL.base);
+    el.textContent=f.text; labelsEl.appendChild(el);
+    labelItems.push({el, anchor:f.anchor, fn:f.fn, obj:f.obj, kind:f.kind, type:'face'}); }
+}
+
+function applyMode(){
+  const m=state.mode, h=H();
+  const lc=(m==='M'||m==='F')?COL.lat:COL.neutral, lo={struct:.24,M:.86,F:.86,V:.1}[m];
+  model.lat.forEach(o=>{ o.material.color.set(lc); o.material.opacity=lo; });
+  model.bases.forEach(b=>{ let c=m==='F'?COL.base:COL.neutral, o={struct:.24,M:.05,F:.86,V:.1}[m];
+    if(h==='S'&&b.mesh===model.sBase){ c=PCOL.S; o=.85; }
+    b.mesh.material.color.set(c); b.op=o; b.mesh.material.opacity=o; b.mesh.position.y=0; });
+  [model.fill, model.section, model.ghost].forEach(o=>{ if(o) o.visible=(m==='V'); });
+  for(const [k,P] of Object.entries(model.params)){ const on=h===k;
+    P.objs.forEach(o=>{ o.scale.set(on?2.2:1,1,on?2.2:1);
+      if(P.swap) o.material=on?P.mat:model.edgeMat; else o.visible=state.labels||on; }); }
+  model.extras.forEach(o=>o.visible=state.labels||h==='h');
+}
+
+function updateLabels(){
+  const w=stage.clientWidth, ht=stage.clientHeight, m=state.mode, h=H();
+  for(const L of labelItems){
+    let show;
+    if(L.type==='param') show = (L.key==='S'||L.key==='P') ? (h===L.key || (state.labels&&m==='struct')) : (state.labels||h===L.key);
+    else show = state.showCalcs && (L.kind==='lat' ? (m==='M'||m==='F') : (m==='F'));
+    if(!show){ L.el.style.display='none'; continue; }
+    const p = L.fn ? L.fn() : L.anchor.clone(); if(L.obj) p.add(L.obj.position);
+    p.project(camera);
+    if(p.z>1){ L.el.style.display='none'; continue; }
+    L.el.style.display='';
+    if(L.type==='param') L.el.classList.toggle('on', h===L.key);
+    L.el.style.transform=`translate(${((p.x+1)/2*w).toFixed(1)}px,${((1-p.y)/2*ht).toFixed(1)}px) translate(-50%,-50%)`;
+  }
+}
+
+/* ---------- מצלמה ---------- */
+let aspect=1;
+function fitDist(){ const r=2.75, vh=THREE.MathUtils.degToRad(camera.fov/2), hh=Math.atan(Math.tan(vh)*aspect);
+  return Math.max(r/Math.sin(vh), r/Math.sin(hh)); }
+function updateCamera(){ const r=fitDist()*view.zoom, {theta,phi}=view;
+  camera.position.set(r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.cos(theta)); camera.lookAt(0,0,0); }
+function resize(){ const w=stage.clientWidth, h=stage.clientHeight; if(!w||!h) return;
+  renderer.setSize(w,h,false); aspect=w/h; camera.aspect=aspect; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage);
+
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const cv=renderer.domElement, pts=new Map(); let pinch0=0, zoom0=1;
+const hint=document.getElementById('hint');
+const pdist=()=>{ const [a,b]=[...pts.values()]; return Math.hypot(a.x-b.x,a.y-b.y); };
+cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2){ pinch0=pdist(); zoom0=view.zoom; } dragging=true; hint.classList.add('gone'); });
+cv.addEventListener('pointermove',e=>{ const p=pts.get(e.pointerId); if(!p) return;
+  const dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY;
+  if(pts.size===1){ view.theta-=dx*.009; view.phi=clamp(view.phi-dy*.009,.08,Math.PI-.08); }
+  else if(pts.size===2 && pinch0>0){ view.zoom=clamp(zoom0*pinch0/pdist(),.5,1.8); } });
+const up=e=>{ pts.delete(e.pointerId); dragging=pts.size>0; };
+cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{ e.preventDefault(); view.zoom=clamp(view.zoom*(1+e.deltaY*.001),.5,1.8); hint.classList.add('gone'); },{passive:false});
+
+const angle=document.getElementById('angle'), angleVal=document.getElementById('angleVal'), autoCb=document.getElementById('auto');
+let angleActive=false;
+angle.addEventListener('pointerdown',()=>angleActive=true);
+angle.addEventListener('pointerup',()=>angleActive=false);
+angle.addEventListener('input',()=>{ view.theta=THREE.MathUtils.degToRad(+angle.value); state.auto=false; autoCb.checked=false; angleVal.textContent=angle.value+'°'; });
+autoCb.addEventListener('change',()=>state.auto=autoCb.checked);
+document.getElementById('vFront').onclick=()=>{ view.phi=Math.PI/2-.02; };
+document.getElementById('vTop').onclick=()=>{ view.phi=.08; };
+document.getElementById('vReset').onclick=()=>{ view.theta=.65; view.phi=1.12; view.zoom=1; };
+document.getElementById('lbl').addEventListener('change',e=>{ state.labels=e.target.checked; applyMode(); });
+document.getElementById('showCalcs').addEventListener('change',e=>{ state.showCalcs=e.target.checked; renderCard(); });
+
+/* ---------- ממשק ---------- */
+const nav=document.getElementById('solidNav');
+SOLIDS.forEach((s,i)=>{ const b=document.createElement('button'); b.innerHTML=`<span class="n">${i+1}</span>${s.name}`;
+  b.onclick=()=>setSolid(i); nav.appendChild(b); });
+document.getElementById('prevBtn').onclick=()=>setSolid(state.idx-1);
+document.getElementById('nextBtn').onclick=()=>setSolid(state.idx+1);
+document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+function renderNav(){ [...nav.children].forEach((b,i)=>{ b.classList.toggle('on',i===state.idx); if(i===state.idx) b.scrollIntoView({block:'nearest',inline:'nearest'}); });
+  document.getElementById('solidName').textContent=cur().name; }
+function renderModes(){ document.querySelectorAll('.modes button').forEach(b=>{ b.classList.toggle('on',b.dataset.m===state.mode);
+  b.setAttribute('aria-selected', b.dataset.m===state.mode); b.disabled = b.dataset.m==='M' && !!cur().noM;
+  b.title = b.disabled ? 'לכדור אין שטח מעטפת בנוסחאון' : ''; }); }
+
+function valStr(r){ return r.pi!=null ? `${fmt(r.pi)}π ≈ ${fmt(r.pi*Math.PI)}` : fmt(r.val); }
+function renderCard(){
+  const S=cur(), c=model.calc, card=document.getElementById('modeCard'), m=state.mode;
+  if(m==='struct'){
+    card.innerHTML=`<div class="mtitle">${S.name}</div><p>${S.desc}</p>
+      ${state.showCalcs && c.extra?`<div class="extra">${c.extra}</div>`:''}
+      <div class="flist">${['M','F','V'].map(k=> c[k]
+        ? `<button class="frow ${k}" data-m="${k}"><span class="tag">${k}</span><span class="m">${c[k].f}</span><span class="nm">${NAMES[k]}</span></button>`
+        : `<div class="frow dis"><span class="tag">${k}</span><span>לכדור אין שטח מעטפת בנוסחאון</span></div>`).join('')}</div>
+      <p class="tip">לחצו על נוסחה כדי לראות אותה על הגוף.</p>`;
+    card.querySelectorAll('.frow[data-m]').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+    return;
+  }
+  const r=c[m], unit=m==='V'?'סמ״ק':'סמ״ר';
+  card.innerHTML=`<div class="mtitle ${m}">${NAMES[m]} (${m})</div>
+    <span class="m big">${r.f}</span>
+    ${S.noBase&&m==='F'?'':`<p>${GEN[m]}</p>`}
+    <p class="spec">${S.txt[m]}</p>
+    ${state.showCalcs && c.extra?`<div class="extra">${c.extra}</div>`:''}
+    ${state.showCalcs ? `<div class="calc"><div class="lbl">הצבה במידות שבחרתם:</div><span class="m">${m} = ${r.sub} = ${valStr(r)}</span><span class="unit">${unit}</span></div>` : '<p class="tip">החישוב המספרי מוסתר. סמנו ״הצגת חישובים״ כדי לחשוף את הפתרון.</p>'}
+    ${m==='V'?'<button class="replay" id="replay">↻ מלאו שוב</button>':''}`;
+  const rp=document.getElementById('replay'); if(rp) rp.onclick=()=>{ state.t=0; };
+}
+
+function renderParams(){
+  const box=document.getElementById('params'); box.innerHTML='';
+  cur().params.forEach(([key,text])=>{
+    const row=document.createElement('div'); row.className='prow'; row.tabIndex=0; row.style.setProperty('--c',PCOL[key]);
+    row.setAttribute('role','button');
+    row.innerHTML=`<span class="sym">${SYM[key]}</span><span>${text}</span><span class="val m">${SYM[key]} = ${fmt(paramVal(key))}</span>`;
+    row.onmouseenter=()=>{ state.hover=key; applyMode(); };
+    row.onmouseleave=()=>{ state.hover=null; applyMode(); };
+    const toggle=()=>{ state.pin = state.pin===key ? null : key; document.querySelectorAll('.prow').forEach(r=>r.classList.remove('on'));
+      if(state.pin) row.classList.add('on'); applyMode(); };
+    row.onclick=toggle; row.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } };
+    box.appendChild(row); });
+}
+function renderDims(){
+  const box=document.getElementById('dims'), S=cur(); box.innerHTML='';
+  S.dims.forEach(([k,label])=>{
+    const row=document.createElement('div'); row.className='drow';
+    row.innerHTML=`<label for="d_${k}">${label}</label><input type="range" id="d_${k}" min="1" max="12" step="1" value="${DIMS[S.id][k]}"><output>${DIMS[S.id][k]}</output>`;
+    const inp=row.querySelector('input'), out=row.querySelector('output');
+    inp.oninput=()=>{ DIMS[S.id][k]=+inp.value; out.textContent=inp.value; build(); renderCard(); renderParams(); };
+    box.appendChild(row); });
+}
+
+function setSolid(i){
+  state.idx=(i+SOLIDS.length)%SOLIDS.length; state.hover=null; state.pin=null;
+  if(state.mode==='M' && cur().noM) state.mode='F';
+  state.t=0; build(); renderNav(); renderModes(); renderCard(); renderParams(); renderDims();
+}
+function setMode(m){ if(m==='M'&&cur().noM) return; state.mode=m; state.t=0; renderModes(); applyMode(); renderCard(); }
+
+document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowLeft') setSolid(state.idx+1); else if(e.key==='ArrowRight') setSolid(state.idx-1);
+  else if(['1','2','3','4'].includes(e.key)) setMode(['struct','M','F','V'][+e.key-1]); });
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ readColors(); build(); });
+
+/* ---------- לולאת ציור ---------- */
+const easeOut=t=>1-Math.pow(1-t,3), easeInOut=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now; state.t+=dt;
+  if(state.auto && !dragging && !angleActive) view.theta+=dt*.32;
+  updateCamera();
+  const m=state.mode;
+  model.bases.forEach(b=>{ if(m==='F'){ const e=reduced?1:easeOut(Math.min(state.t/1.1,1));
+      b.mesh.position.y=b.dir*(1-e)*1.8; b.mesh.material.opacity=b.op*(.15+.85*e); } });
+  if(m==='V' && model.setLevel) model.setLevel(reduced?1:easeInOut(Math.min(state.t/3.2,1)));
+  renderer.render(scene,camera);
+  updateLabels();
+  if(!angleActive){ const deg=Math.round(((THREE.MathUtils.radToDeg(view.theta)%360)+360)%360); angle.value=deg; angleVal.textContent=deg+'°'; }
+  requestAnimationFrame(frame);
+}
+
+readColors(); resize(); setSolid(0); requestAnimationFrame(frame);
+setTimeout(()=>hint.classList.add('gone'), 7000);
+})();
+</script>
+</body>
+</html>
